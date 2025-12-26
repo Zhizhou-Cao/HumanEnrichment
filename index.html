@@ -1,0 +1,85 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人类丰容 - 治愈系自我提升地图</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #fdfaf5;
+            overflow: hidden;
+            font-family: 'ZCOOL KuaiLe', cursive;
+            background-image: url('https://www.transparenttextures.com/patterns/natural-paper.png');
+        }
+        
+        /* Hand-drawn SVG Filter */
+        .hand-drawn {
+            filter: url(#pencil-texture);
+        }
+
+        .wobbly {
+            animation: wobble 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes wobble {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(2px, 3px) rotate(0.5deg); }
+            100% { transform: translate(-2px, 1px) rotate(-0.5deg); }
+        }
+
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        /* Paper texture overlay */
+        .paper-overlay {
+            pointer-events: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0) 0%, rgba(245,230,210,0.1) 100%);
+            z-index: 100;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+  }
+}
+</script>
+</head>
+<body>
+    <div id="root"></div>
+    <div class="paper-overlay"></div>
+
+    <!-- SVG Filters for Hand-Drawn Appearance -->
+    <svg style="position: absolute; width: 0; height: 0;">
+        <defs>
+            <filter id="pencil-texture">
+                <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+            
+            <filter id="wavy-line">
+                <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="2" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" />
+            </filter>
+        </defs>
+    </svg>
+</body>
+</html>

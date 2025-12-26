@@ -13,13 +13,12 @@ interface MapCanvasProps {
   highlightedNodeId: string | null;
 }
 
-// Simple hash to get stable deterministic offsets for custom subcategories
 const getStableOffset = (name: string) => {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-  const dx = ((Math.abs(hash) % 20) - 10); // range -10 to 10
+  const dx = ((Math.abs(hash) % 20) - 10);
   const dy = ((Math.abs(hash >> 5) % 20) - 10); 
   return { dx, dy };
 };
@@ -85,7 +84,6 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
 
   const handleMouseUp = (e: React.MouseEvent, id?: string, isSub?: boolean, catId?: string) => {
     const dragDuration = Date.now() - dragStartTime;
-    // If it was a quick click and not a drag, trigger sampling
     if (dragDuration < 200) {
       if (isSub && catId) {
         onSelectNode(catId, id);
@@ -97,7 +95,6 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
     setDraggedNode(null);
   };
 
-  // Helper to check if a category or subcategory has been activated
   const isNodeActive = (catId: string, subName?: string) => {
     return completedTasks.some(record => {
       const task = allTasks.find(t => t.id === record.taskId);
@@ -113,7 +110,6 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
       const pos = categoryPositions[cat.id] || { x: cat.x, y: cat.y };
       const catSubCats = Array.from(new Set(allTasks.filter(t => t.category === cat.id).map(t => t.subCategory)));
       catSubCats.forEach(scName => {
-        // Use deterministic offset to prevent "shivering" when parent moves
         const off = SUBCAT_OFFSETS[scName] || getStableOffset(scName);
         subs.push({
           name: scName,
@@ -128,16 +124,14 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
     return subs;
   }, [allTasks, categories, categoryPositions, completedTasks]);
 
-  const getHighlightPos = () => {
+  const spotlightPos = useMemo(() => {
     if (!highlightedNodeId) return null;
     const catPos = categoryPositions[highlightedNodeId];
     if (catPos) return catPos;
     const sub = subNodes.find(n => n.name === highlightedNodeId);
     if (sub) return { x: sub.x, y: sub.y };
     return null;
-  };
-
-  const spotlightPos = getHighlightPos();
+  }, [highlightedNodeId, categoryPositions, subNodes]);
 
   return (
     <div 
@@ -153,7 +147,6 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
         className="absolute inset-0 transition-transform duration-75 ease-out origin-center"
         style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})` }}
       >
-        {/* Unopened Tasks (Floating Dots) */}
         {backgroundDots.map(dot => (
           <div 
             key={dot.id}
@@ -169,7 +162,6 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
         ))}
 
         <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {/* Main Connections */}
           {categories.map(cat => {
             const pos = categoryPositions[cat.id] || { x: cat.x, y: cat.y };
             const catActive = isNodeActive(cat.id);
@@ -192,7 +184,6 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
             );
           })}
 
-          {/* Neuron Connections (Completed Tasks follow their parents) */}
           {completedTasks.map((record, i) => {
             const task = allTasks.find(t => t.id === record.taskId);
             if (!task) return null;
@@ -208,7 +199,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
                   stroke={cat?.color || '#ccc'} 
                   strokeWidth="0.2" 
                   fill="none" 
-                  className="opacity-50"
+                  className="opacity-40"
                 />
                 <circle cx={taskX} cy={taskY} r="0.4" fill={cat?.color || '#ccc'} />
               </g>
@@ -216,14 +207,14 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
           })}
         </svg>
 
-        {/* Center Hub */}
+        {/* Center Hub - The heart of the enrichment system */}
         <div className="absolute left-[50%] top-[50%] -translate-x-1/2 -translate-y-1/2 z-20 planetary-slow">
           <div className="hand-drawn bg-white border-4 border-black p-4 rounded-full w-28 h-28 flex items-center justify-center text-center shadow-xl">
             <span className="text-xl font-bold leading-tight">人类<br/>丰容</span>
           </div>
         </div>
 
-        {/* Categories (Main Nodes) */}
+        {/* Categories (Main Nodes) - Z-10 */}
         {categories.map((cat, i) => {
           const pos = categoryPositions[cat.id] || { x: cat.x, y: cat.y };
           return (
@@ -247,13 +238,13 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
           );
         })}
 
-        {/* Subcategories */}
+        {/* Subcategories - Z-10 */}
         {subNodes.map((sub, i) => (
           <div 
             key={sub.name} 
             onMouseDown={(e) => { e.stopPropagation(); handleMouseDown(e, sub.name); }}
             onMouseUp={(e) => { e.stopPropagation(); handleMouseUp(e, sub.name, true, sub.catId); }}
-            className={`absolute z-10 -translate-x-1/2 -translate-y-1/2 cursor-pointer planetary-fast transition-all duration-700 ${sub.active ? 'opacity-100 grayscale-0' : 'opacity-40 grayscale-[80%]'}`}
+            className={`absolute z-10 -translate-x-1/2 -translate-y-1/2 cursor-pointer planetary-fast transition-all duration-700 ${sub.active ? 'opacity-100' : 'opacity-40'}`}
             style={{ 
               left: `${sub.x}%`, 
               top: `${sub.y}%`, 
@@ -267,8 +258,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
           </div>
         ))}
 
-        {/* Completed Task Labels - Ensure these are positioned far enough via App.tsx logic, 
-            but also given z-40 and a clear background to stay readable. */}
+        {/* Completed Task Labels - Highest Z (40) to stay on top */}
         {completedTasks.map((record, i) => {
           const task = allTasks.find(t => t.id === record.taskId);
           if (!task) return null;
@@ -296,7 +286,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
           );
         })}
 
-        {/* Spotlight */}
+        {/* Spotlight - Highest Z (50) */}
         {spotlightPos && (
           <div 
             className="absolute z-50 pointer-events-none transition-all duration-150 ease-out"

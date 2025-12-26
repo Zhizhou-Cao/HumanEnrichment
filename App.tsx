@@ -10,6 +10,7 @@ import { AppState, CategoryID, EnrichmentTask, UserTaskRecord, CategoryInfo } fr
 import { INITIAL_TASKS, CATEGORIES } from './constants';
 
 const LOCAL_STORAGE_KEY = 'human_enrichment_v4';
+const COUNTER_API_URL = 'https://api.counterapi.dev/v1/human_enrichment/global_visitors/up';
 
 const DEFAULT_CATS: CategoryInfo[] = Object.entries(CATEGORIES).map(([id, info]) => ({
   id,
@@ -24,7 +25,7 @@ const App: React.FC = () => {
       completedTasks: [],
       customTasks: [],
       customCategories: [],
-      visitorCount: Math.floor(Math.random() * 500) + 2048,
+      visitorCount: 0, // Reset fallback base to 0
       categoryPositions: {}
     };
   });
@@ -37,6 +38,23 @@ const App: React.FC = () => {
   const [isRandomizing, setIsRandomizing] = useState(false);
   const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null);
 
+  // Global Visitor Counter: Fetch and increment from shared cloud API
+  useEffect(() => {
+    const fetchGlobalCount = async () => {
+      try {
+        const response = await fetch(COUNTER_API_URL);
+        const data = await response.json();
+        if (data && data.count) {
+          setState(prev => ({ ...prev, visitorCount: data.count }));
+        }
+      } catch (err) {
+        console.error("Failed to fetch global count, using local fallback", err);
+        setState(prev => ({ ...prev, visitorCount: prev.visitorCount + 1 }));
+      }
+    };
+    fetchGlobalCount();
+  }, []);
+
   // Computed views based on current state
   const allCategories = useMemo(() => [...DEFAULT_CATS, ...state.customCategories], [state.customCategories]);
   const allTasks = useMemo(() => [...INITIAL_TASKS, ...state.customTasks], [state.customTasks]);
@@ -45,14 +63,6 @@ const App: React.FC = () => {
     if (!activeTask) return null;
     return allCategories.find(c => c.id === activeTask.category) || null;
   }, [activeTask, allCategories]);
-
-  useEffect(() => {
-    const hasVisited = sessionStorage.getItem('has_visited');
-    if (!hasVisited) {
-      setState(prev => ({ ...prev, visitorCount: prev.visitorCount + 1 }));
-      sessionStorage.setItem('has_visited', 'true');
-    }
-  }, []);
 
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
@@ -89,10 +99,9 @@ const App: React.FC = () => {
   const handleTaskConfirm = useCallback(() => {
     if (!activeTask) return;
     
-    // Increased distance significantly to ensure the label sits well outside any parent box
-    // Min 15% distance, Max 28% distance from parent node center
+    // Position tasks in a shell to avoid overlapping with nodes
     const angle = Math.random() * Math.PI * 2;
-    const distance = 15 + Math.random() * 13; 
+    const distance = 18 + Math.random() * 12; 
     const dx = Math.cos(angle) * distance;
     const dy = Math.sin(angle) * distance;
 
@@ -170,10 +179,11 @@ const App: React.FC = () => {
     <div className="min-h-screen relative overflow-hidden bg-[#fdfaf5]">
       {isRandomizing && <div className="fixed inset-0 bg-black/60 z-[45] transition-opacity duration-500" />}
 
+      {/* Main Header with Visitor Counter */}
       <div className="fixed top-6 left-1/2 -translate-x-1/2 z-40 text-center w-full pointer-events-none select-none">
         <div className="inline-block px-6 py-2 bg-white/40 backdrop-blur-sm rounded-full border border-black/5 shadow-sm">
-          <p className="text-gray-500 text-xs tracking-[0.2em] font-['ZCOOL_XiaoWei'] uppercase">
-            你是第 <span className="font-bold text-gray-800 text-lg mx-1 tabular-nums">{state.visitorCount}</span> 位丰容的人类
+          <p className="text-gray-500 text-xs tracking-[0.1em] font-['ZCOOL_XiaoWei']">
+            HumanEnrichment：你是第 <span className="font-bold text-gray-800 text-lg mx-1 tabular-nums transition-all duration-1000">{state.visitorCount}</span> 位丰容的人类
           </p>
         </div>
       </div>

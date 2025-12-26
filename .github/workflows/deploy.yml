@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ["main"] # 当你提交代码到 main 分支时自动触发
+    branches: ["main"]
 
 permissions:
   contents: read
@@ -20,7 +20,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          #cache: 'npm'
 
       - name: Install dependencies
         run: npm install
@@ -28,7 +27,11 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          artifact_name: github-pages
+          path: ./dist  # 这一步非常关键，确保打包后的文件夹被上传
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
